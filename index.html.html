@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Avgångar">
+<meta name="theme-color" content="#0a0f1e">
+<title>SL Avgångar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0f1e;
+    --surface: #111827;
+    --surface2: #1a2235;
+    --border: #1e2d47;
+    --accent: #3b82f6;
+    --accent2: #06b6d4;
+    --green: #22c55e;
+    --yellow: #f59e0b;
+    --red: #ef4444;
+    --text: #f0f4ff;
+    --muted: #64748b;
+    --mono: 'Space Mono', monospace;
+    --sans: 'Syne', sans-serif;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100dvh;
+    overscroll-behavior: none;
+  }
+
+  body {
+    padding-top: var(--safe-top);
+    padding-bottom: calc(var(--safe-bottom) + 80px);
+  }
+
+  /* Header */
+  .header {
+    padding: 20px 20px 0;
+    position: sticky;
+    top: var(--safe-top);
+    z-index: 100;
+    background: linear-gradient(to bottom, var(--bg) 85%, transparent);
+  }
+
+  .header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .logo {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    color: var(--accent);
+    text-transform: uppercase;
+  }
+
+  .time-display {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+
+  /* Search */
+  .search-wrap {
+    position: relative;
+    margin-bottom: 6px;
+  }
+
+  .search-input {
+    width: 100%;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 14px;
+    padding: 14px 48px 14px 18px;
+    font-family: var(--sans);
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s;
+    -webkit-appearance: none;
+  }
+
+  .search-input::placeholder { color: var(--muted); font-weight: 400; }
+  .search-input:focus { border-color: var(--accent); }
+
+  .search-btn {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--accent);
+    border: none;
+    border-radius: 10px;
+    width: 36px; height: 36px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s, transform 0.1s;
+  }
+  .search-btn:active { transform: translateY(-50%) scale(0.93); background: var(--accent2); }
+  .search-btn svg { width: 16px; height: 16px; stroke: white; fill: none; stroke-width: 2.5; stroke-linecap: round; }
+
+  /* Suggestions */
+  .suggestions {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0; right: 0;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    z-index: 200;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    display: none;
+  }
+  .suggestions.visible { display: block; }
+
+  .suggestion-item {
+    padding: 13px 18px;
+    font-size: 15px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: background 0.1s;
+    border-bottom: 1px solid var(--border);
+  }
+  .suggestion-item:last-child { border-bottom: none; }
+  .suggestion-item:active { background: var(--border); }
+
+  .suggestion-icon {
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    background: var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px;
+    flex-shrink: 0;
+    color: var(--accent2);
+  }
+
+  .suggestion-name { font-weight: 600; font-size: 14px; }
+  .suggestion-sub { font-size: 11px; color: var(--muted); font-family: var(--mono); }
+
+  /* Saved stops */
+  .saved-stops {
+    display: flex;
+    gap: 8px;
+    padding: 12px 20px 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .saved-stops::-webkit-scrollbar { display: none; }
+
+  .saved-chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 12px;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    flex-shrink: 0;
+  }
+  .saved-chip.active {
+    border-color: var(--accent);
+    background: rgba(59,130,246,0.12);
+    color: var(--accent);
+  }
+  .saved-chip:active { opacity: 0.7; }
+  .saved-chip .remove-chip {
+    font-size: 14px;
+    color: var(--muted);
+    line-height: 1;
+    padding: 0 0 0 2px;
+  }
+
+  /* Main content */
+  .main { padding: 0 16px; }
+
+  /* Stop header card */
+  .stop-header {
+    background: linear-gradient(135deg, var(--surface) 0%, var(--surface2) 100%);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 18px 20px 14px;
+    margin-bottom: 12px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .stop-header::before {
+    content: '';
+    position: absolute;
+    top: -30px; right: -30px;
+    width: 100px; height: 100px;
+    background: radial-gradient(circle, rgba(59,130,246,0.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .stop-name {
+    font-size: 22px;
+    font-weight: 800;
+    line-height: 1.1;
+    margin-bottom: 4px;
+  }
+
+  .stop-meta {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .stop-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  .action-btn {
+    padding: 8px 14px;
+    border-radius: 10px;
+    font-family: var(--sans);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: opacity 0.15s, transform 0.1s;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .action-btn:active { opacity: 0.7; transform: scale(0.97); }
+
+  .btn-save {
+    background: rgba(59,130,246,0.15);
+    color: var(--accent);
+    border: 1px solid rgba(59,130,246,0.3);
+  }
+  .btn-refresh {
+    background: rgba(6,182,212,0.12);
+    color: var(--accent2);
+    border: 1px solid rgba(6,182,212,0.25);
+  }
+
+  /* Filter tabs */
+  .filter-tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 12px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .filter-tabs::-webkit-scrollbar { display: none; }
+
+  .filter-tab {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    font-family: var(--mono);
+    cursor: pointer;
+    border: 1.5px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    white-space: nowrap;
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+  .filter-tab.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+  }
+
+  /* Departures list */
+  .departure-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 14px 16px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    transition: border-color 0.2s;
+    animation: fadeUp 0.25s ease both;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .line-badge {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 700;
+    flex-shrink: 0;
+    letter-spacing: -0.02em;
+  }
+
+  .departure-info { flex: 1; min-width: 0; }
+
+  .departure-dest {
+    font-size: 15px;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 3px;
+  }
+
+  .departure-sub {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+  }
+
+  .departure-time {
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .time-countdown {
+    font-family: var(--mono);
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 2px;
+  }
+
+  .time-now { color: var(--green); }
+  .time-soon { color: var(--yellow); }
+  .time-later { color: var(--text); }
+  .time-label { font-size: 9px; color: var(--muted); font-family: var(--mono); letter-spacing: 0.08em; text-transform: uppercase; }
+
+  /* Deviation badge */
+  .deviation-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 700;
+    font-family: var(--mono);
+    letter-spacing: 0.04em;
+    margin-top: 4px;
+  }
+  .deviation-info { background: rgba(59,130,246,0.15); color: var(--accent); }
+  .deviation-warning { background: rgba(245,158,11,0.15); color: var(--yellow); }
+  .deviation-critical { background: rgba(239,68,68,0.15); color: var(--red); }
+
+  /* Occupancy */
+  .occupancy {
+    display: flex;
+    gap: 2px;
+    margin-top: 4px;
+  }
+  .occ-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--border);
+  }
+  .occ-dot.filled { background: var(--accent2); }
+  .occ-dot.full { background: var(--yellow); }
+  .occ-dot.packed { background: var(--red); }
+
+  /* States */
+  .state-empty {
+    text-align: center;
+    padding: 60px 30px;
+    color: var(--muted);
+  }
+  .state-empty .state-icon { font-size: 40px; margin-bottom: 16px; }
+  .state-empty p { font-size: 15px; line-height: 1.6; }
+
+  .loading-rows { padding: 8px 0; }
+  .skeleton {
+    background: linear-gradient(90deg, var(--surface) 25%, var(--surface2) 50%, var(--surface) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s infinite;
+    border-radius: 16px;
+    height: 72px;
+    margin-bottom: 8px;
+  }
+  @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+  /* Deviation section */
+  .deviation-section {
+    background: rgba(239,68,68,0.06);
+    border: 1px solid rgba(239,68,68,0.2);
+    border-radius: 14px;
+    padding: 14px 16px;
+    margin-bottom: 12px;
+  }
+  .deviation-section-title {
+    font-size: 11px;
+    font-weight: 700;
+    font-family: var(--mono);
+    color: var(--red);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .deviation-msg {
+    font-size: 13px;
+    color: #fca5a5;
+    line-height: 1.5;
+    margin-bottom: 6px;
+  }
+  .deviation-msg:last-child { margin-bottom: 0; }
+
+  /* Bottom nav */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: rgba(10,15,30,0.92);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid var(--border);
+    padding: 12px 20px;
+    padding-bottom: calc(12px + var(--safe-bottom));
+    display: flex;
+    justify-content: space-around;
+    z-index: 100;
+  }
+
+  .nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    opacity: 0.45;
+    transition: opacity 0.15s;
+    padding: 4px 16px;
+  }
+  .nav-item.active { opacity: 1; }
+  .nav-item svg { width: 22px; height: 22px; stroke: var(--text); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .nav-item.active svg { stroke: var(--accent); }
+  .nav-label { font-size: 10px; font-weight: 600; letter-spacing: 0.04em; }
+  .nav-item.active .nav-label { color: var(--accent); }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: calc(85px + var(--safe-bottom));
+    left: 50%; transform: translateX(-50%) translateY(10px);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px 18px;
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.2s, transform 0.2s;
+    pointer-events: none;
+    z-index: 300;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* Pulse indicator */
+  .live-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    display: inline-block;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .spin { animation: spin 1s linear infinite; }
+  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { display: none; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div class="logo">SL · Avgångar</div>
+    <div class="time-display" id="clockDisplay">--:--</div>
+  </div>
+  <div class="search-wrap" id="searchWrap">
+    <input
+      class="search-input"
+      id="searchInput"
+      type="search"
+      placeholder="Sök hållplats…"
+      autocomplete="off"
+      autocorrect="off"
+      spellcheck="false"
+    />
+    <button class="search-btn" id="searchBtn" aria-label="Sök">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    </button>
+    <div class="suggestions" id="suggestions"></div>
+  </div>
+</div>
+
+<div class="saved-stops" id="savedStops"></div>
+
+<div class="main" id="mainContent">
+  <div class="state-empty">
+    <div class="state-icon">🚌</div>
+    <p>Sök på en hållplats för att se avgångar i realtid</p>
+  </div>
+</div>
+
+<nav class="bottom-nav">
+  <div class="nav-item active">
+    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+    <span class="nav-label">Avgångar</span>
+  </div>
+  <div class="nav-item" id="navFav">
+    <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+    <span class="nav-label">Sparade</span>
+  </div>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── State ────────────────────────────────────────────────────────────────────
+const state = {
+  currentStop: null,
+  departures: [],
+  deviations: [],
+  savedStops: JSON.parse(localStorage.getItem('sl_saved') || '[]'),
+  activeFilter: 'ALL',
+  loading: false,
+  refreshTimer: null,
+};
+
+// ─── Transport mode colors ─────────────────────────────────────────────────
+const modeColor = {
+  BUS:   { bg: 'rgba(59,130,246,0.18)', color: '#93c5fd' },
+  METRO: { bg: 'rgba(239,68,68,0.18)',  color: '#fca5a5' },
+  TRAM:  { bg: 'rgba(34,197,94,0.18)',  color: '#86efac' },
+  TRAIN: { bg: 'rgba(245,158,11,0.18)', color: '#fcd34d' },
+  SHIP:  { bg: 'rgba(6,182,212,0.18)',  color: '#67e8f9' },
+  default: { bg: 'rgba(100,116,139,0.2)', color: '#94a3b8' }
+};
+
+function getModeStyle(mode) {
+  return modeColor[mode] || modeColor.default;
+}
+
+// ─── Clock ────────────────────────────────────────────────────────────────────
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clockDisplay').textContent =
+    now.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
+}
+updateClock();
+setInterval(updateClock, 1000);
+
+// ─── Toast ────────────────────────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ─── API ──────────────────────────────────────────────────────────────────────
+// SL Transport API – no key required
+const BASE = 'https://transport.integration.sl.se/v1';
+
+async function searchStops(query) {
+  const res = await fetch(`${BASE}/sites?expand=false`);
+  const data = await res.json();
+  const q = query.toLowerCase().trim();
+  return (data || [])
+    .filter(s => s.name && s.name.toLowerCase().includes(q))
+    .sort((a, b) => {
+      const an = a.name.toLowerCase().startsWith(q) ? 0 : 1;
+      const bn = b.name.toLowerCase().startsWith(q) ? 0 : 1;
+      return an - bn;
+    })
+    .slice(0, 6);
+}
+
+async function fetchDepartures(siteId) {
+  const res = await fetch(`${BASE}/sites/${siteId}/departures`);
+  if (!res.ok) throw new Error('Kunde inte hämta avgångar');
+  const data = await res.json();
+  return data.departures || [];
+}
+
+async function fetchDeviations(siteId) {
+  try {
+    const res = await fetch(
+      `https://deviations.integration.sl.se/v1/messages?site=${siteId}&future=false`
+    );
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
+  } catch { return []; }
+}
+
+// ─── Search UI ────────────────────────────────────────────────────────────────
+let searchDebounce;
+const searchInput = document.getElementById('searchInput');
+const suggestionsEl = document.getElementById('suggestions');
+
+searchInput.addEventListener('input', () => {
+  clearTimeout(searchDebounce);
+  const v = searchInput.value.trim();
+  if (v.length < 2) { hideSuggestions(); return; }
+  searchDebounce = setTimeout(() => doSearch(v), 280);
+});
+
+searchInput.addEventListener('focus', () => {
+  if (searchInput.value.trim().length >= 2) suggestionsEl.classList.add('visible');
+});
+
+document.addEventListener('click', e => {
+  if (!document.getElementById('searchWrap').contains(e.target)) hideSuggestions();
+});
+
+document.getElementById('searchBtn').addEventListener('click', () => {
+  const v = searchInput.value.trim();
+  if (v.length >= 2) doSearch(v);
+});
+
+searchInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); doSearch(searchInput.value.trim()); }
+});
+
+function hideSuggestions() {
+  suggestionsEl.classList.remove('visible');
+  suggestionsEl.innerHTML = '';
+}
+
+async function doSearch(q) {
+  if (!q) return;
+  suggestionsEl.innerHTML = '<div class="suggestion-item" style="color:var(--muted);font-size:13px">Söker…</div>';
+  suggestionsEl.classList.add('visible');
+
+  try {
+    const stops = await searchStops(q);
+    if (!stops.length) {
+      suggestionsEl.innerHTML = '<div class="suggestion-item" style="color:var(--muted);font-size:13px">Inga träffar</div>';
+      return;
+    }
+    suggestionsEl.innerHTML = stops.map(s => {
+      const modes = (s.transport_mode_group || []).join(' · ') || '';
+      return `<div class="suggestion-item" data-id="${s.id}" data-name="${s.name}">
+        <div class="suggestion-icon">⬡</div>
+        <div>
+          <div class="suggestion-name">${s.name}</div>
+          <div class="suggestion-sub">${modes || 'Hållplats'}</div>
+        </div>
+      </div>`;
+    }).join('');
+
+    suggestionsEl.querySelectorAll('.suggestion-item[data-id]').forEach(el => {
+      el.addEventListener('click', () => {
+        selectStop({ id: el.dataset.id, name: el.dataset.name });
+      });
+    });
+  } catch (err) {
+    suggestionsEl.innerHTML = '<div class="suggestion-item" style="color:var(--red);font-size:13px">Fel vid sökning</div>';
+  }
+}
+
+// ─── Select stop ──────────────────────────────────────────────────────────────
+function selectStop(stop) {
+  state.currentStop = stop;
+  state.activeFilter = 'ALL';
+  searchInput.value = stop.name;
+  hideSuggestions();
+  searchInput.blur();
+  loadDepartures();
+}
+
+// ─── Load departures ──────────────────────────────────────────────────────────
+async function loadDepartures(silent = false) {
+  if (!state.currentStop) return;
+  clearTimeout(state.refreshTimer);
+
+  if (!silent) {
+    state.loading = true;
+    renderLoadingState();
+  }
+
+  try {
+    const [departures, deviations] = await Promise.all([
+      fetchDepartures(state.currentStop.id),
+      fetchDeviations(state.currentStop.id),
+    ]);
+    state.departures = departures;
+    state.deviations = deviations;
+    state.loading = false;
+    renderDepartures();
+  } catch (err) {
+    state.loading = false;
+    renderError(err.message);
+  }
+
+  // Auto-refresh every 20s
+  state.refreshTimer = setTimeout(() => loadDepartures(true), 20000);
+}
+
+// ─── Render ───────────────────────────────────────────────────────────────────
+function renderLoadingState() {
+  const main = document.getElementById('mainContent');
+  main.innerHTML = `
+    <div class="stop-header">
+      <div class="stop-name">${state.currentStop.name}</div>
+      <div class="stop-meta"><span class="live-dot"></span> Hämtar…</div>
+    </div>
+    <div class="loading-rows">
+      <div class="skeleton"></div>
+      <div class="skeleton" style="animation-delay:.1s"></div>
+      <div class="skeleton" style="animation-delay:.2s"></div>
+      <div class="skeleton" style="animation-delay:.3s"></div>
+    </div>
+  `;
+}
+
+function renderError(msg) {
+  document.getElementById('mainContent').innerHTML = `
+    <div class="state-empty">
+      <div class="state-icon">⚠️</div>
+      <p>${msg || 'Något gick fel. Försök igen.'}</p>
+    </div>
+  `;
+}
+
+function getMinutes(dep) {
+  const t = dep.expected || dep.scheduled;
+  if (!t) return 999;
+  return Math.round((new Date(t) - new Date()) / 60000);
+}
+
+function formatTime(dep) {
+  const t = dep.expected || dep.scheduled;
+  if (!t) return '--:--';
+  return new Date(t).toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
+}
+
+function getMode(dep) {
+  return dep.line?.transport_mode || 'BUS';
+}
+
+function getOccupancyDots(level) {
+  const levels = { EMPTY: 0, SEATS_AVAILABLE: 1, STANDING_AVAILABLE: 2, FULL: 3 };
+  const val = levels[level] ?? 0;
+  return [0,1,2,3].map(i => {
+    const cls = i <= val ? (val >= 3 ? 'packed' : val >= 2 ? 'full' : 'filled') : '';
+    return `<div class="occ-dot ${cls}"></div>`;
+  }).join('');
+}
+
+function renderDepartures() {
+  const main = document.getElementById('mainContent');
+  const saved = state.savedStops.find(s => s.id === state.currentStop.id);
+  const isSaved = !!saved;
+
+  // Available modes
+  const modes = [...new Set(state.departures.map(d => getMode(d)))];
+
+  // Filter
+  let deps = state.departures;
+  if (state.activeFilter !== 'ALL') {
+    deps = deps.filter(d => getMode(d) === state.activeFilter);
+  }
+
+  // Filter tabs HTML
+  const tabs = ['ALL', ...modes].map(m => {
+    const labels = { ALL: 'Alla', BUS: 'Buss', METRO: 'Tunnelbana', TRAM: 'Spårvagn', TRAIN: 'Tåg', SHIP: 'Båt' };
+    return `<button class="filter-tab ${state.activeFilter === m ? 'active' : ''}" data-mode="${m}">${labels[m] || m}</button>`;
+  }).join('');
+
+  // Deviations
+  let devHtml = '';
+  if (state.deviations.length > 0) {
+    const msgs = state.deviations.slice(0,3).map(d =>
+      `<div class="deviation-msg">⚠ ${d.header || d.message || 'Störning på linjen'}</div>`
+    ).join('');
+    devHtml = `<div class="deviation-section">
+      <div class="deviation-section-title">⚠ Störningar</div>
+      ${msgs}
+    </div>`;
+  }
+
+  // Departures
+  let depsHtml = '';
+  if (!deps.length) {
+    depsHtml = `<div class="state-empty"><div class="state-icon">🕐</div><p>Inga avgångar just nu</p></div>`;
+  } else {
+    depsHtml = deps.slice(0, 20).map((dep, i) => {
+      const mins = getMinutes(dep);
+      const mode = getMode(dep);
+      const style = getModeStyle(mode);
+      const timeClass = mins <= 1 ? 'time-now' : mins <= 4 ? 'time-soon' : 'time-later';
+      const timeText = mins <= 0 ? 'Nu' : mins > 59 ? formatTime(dep) : `${mins}`;
+      const timeUnit = mins <= 0 ? '' : mins > 59 ? '' : 'min';
+      const dest = dep.destination || dep.direction || '–';
+      const line = dep.line?.designation || '?';
+      const via = dep.via ? `via ${dep.via}` : '';
+      const occ = dep.journey?.passenger_level ? `<div class="occupancy">${getOccupancyDots(dep.journey.passenger_level)}</div>` : '';
+      const cancelled = dep.state === 'CANCELLED';
+
+      let devBadge = '';
+      if (cancelled) devBadge = `<span class="deviation-badge deviation-critical">INSTÄLLD</span>`;
+      else if (dep.deviations) devBadge = `<span class="deviation-badge deviation-warning">⚠ Info</span>`;
+
+      return `<div class="departure-card" style="animation-delay:${i * 0.04}s; ${cancelled ? 'opacity:0.5' : ''}">
+        <div class="line-badge" style="background:${style.bg};color:${style.color}">${line}</div>
+        <div class="departure-info">
+          <div class="departure-dest">${dest}</div>
+          <div class="departure-sub">${mode}${via ? ' · ' + via : ''}</div>
+          ${devBadge}
+          ${occ}
+        </div>
+        <div class="departure-time">
+          <div class="time-countdown ${timeClass}">${timeText}</div>
+          <div class="time-label">${timeUnit || formatTime(dep)}</div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  const now = new Date().toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
+
+  main.innerHTML = `
+    <div class="stop-header">
+      <div class="stop-name">${state.currentStop.name}</div>
+      <div class="stop-meta">
+        <span class="live-dot"></span>
+        Uppdaterad ${now} · ${state.departures.length} avg.
+      </div>
+      <div class="stop-actions">
+        <button class="action-btn btn-save" id="saveBtn">
+          ${isSaved ? '★ Sparad' : '☆ Spara'}
+        </button>
+        <button class="action-btn btn-refresh" id="refreshBtn">
+          ↻ Uppdatera
+        </button>
+      </div>
+    </div>
+    ${devHtml}
+    <div class="filter-tabs" id="filterTabs">${tabs}</div>
+    ${depsHtml}
+  `;
+
+  // Events
+  document.getElementById('saveBtn').addEventListener('click', toggleSave);
+  document.getElementById('refreshBtn').addEventListener('click', () => {
+    document.getElementById('refreshBtn').innerHTML = '<span class="spin">↻</span> Hämtar…';
+    loadDepartures();
+  });
+  document.getElementById('filterTabs').querySelectorAll('.filter-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.activeFilter = btn.dataset.mode;
+      renderDepartures();
+    });
+  });
+}
+
+// ─── Save/Remove stops ────────────────────────────────────────────────────────
+function toggleSave() {
+  const idx = state.savedStops.findIndex(s => s.id === state.currentStop.id);
+  if (idx >= 0) {
+    state.savedStops.splice(idx, 1);
+    showToast('Hållplats borttagen från sparade');
+  } else {
+    state.savedStops.push({ id: state.currentStop.id, name: state.currentStop.name });
+    showToast('Hållplats sparad! ⭐');
+  }
+  localStorage.setItem('sl_saved', JSON.stringify(state.savedStops));
+  renderSavedChips();
+  renderDepartures();
+}
+
+function removeStop(id) {
+  state.savedStops = state.savedStops.filter(s => s.id !== id);
+  localStorage.setItem('sl_saved', JSON.stringify(state.savedStops));
+  renderSavedChips();
+  if (state.currentStop?.id === id) renderDepartures();
+}
+
+function renderSavedChips() {
+  const el = document.getElementById('savedStops');
+  if (!state.savedStops.length) { el.innerHTML = ''; return; }
+  el.innerHTML = state.savedStops.map(s => `
+    <div class="saved-chip ${state.currentStop?.id === s.id ? 'active' : ''}" data-id="${s.id}" data-name="${s.name}">
+      ${s.name}
+      <span class="remove-chip" data-remove="${s.id}">×</span>
+    </div>
+  `).join('');
+
+  el.querySelectorAll('.saved-chip').forEach(chip => {
+    chip.addEventListener('click', e => {
+      if (e.target.dataset.remove) {
+        removeStop(e.target.dataset.remove);
+        return;
+      }
+      selectStop({ id: chip.dataset.id, name: chip.dataset.name });
+    });
+  });
+}
+
+// ─── Nav ──────────────────────────────────────────────────────────────────────
+document.getElementById('navFav').addEventListener('click', () => {
+  if (!state.savedStops.length) {
+    showToast('Inga sparade hållplatser ännu');
+    return;
+  }
+  // Scroll to saved chips
+  document.getElementById('savedStops').scrollIntoView({ behavior: 'smooth' });
+});
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+renderSavedChips();
+</script>
+</body>
+</html>
