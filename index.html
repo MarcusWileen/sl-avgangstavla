@@ -9,7 +9,7 @@
 <meta name="theme-color" content="#0a0f1e">
 <title>SL Avgångar</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg: #0a0f1e;
@@ -23,8 +23,8 @@
     --red: #ef4444;
     --text: #f0f4ff;
     --muted: #64748b;
-    --mono: 'Space Mono', monospace;
-    --sans: 'Syne', sans-serif;
+    --mono: 'DM Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
     --safe-top: env(safe-area-inset-top, 0px);
     --safe-bottom: env(safe-area-inset-bottom, 0px);
   }
@@ -219,18 +219,18 @@
   }
 
   .stop-name {
-    font-size: 22px;
-    font-weight: 800;
-    line-height: 1.1;
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 1.15;
     margin-bottom: 4px;
+    letter-spacing: -0.02em;
   }
 
   .stop-meta {
-    font-family: var(--mono);
-    font-size: 10px;
+    font-family: var(--sans);
+    font-size: 12px;
+    font-weight: 500;
     color: var(--muted);
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -300,12 +300,12 @@
   .departure-card {
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 14px 16px;
-    margin-bottom: 8px;
+    border-radius: 18px;
+    padding: 18px 16px;
+    margin-bottom: 10px;
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 16px;
     transition: border-color 0.2s;
     animation: fadeUp 0.25s ease both;
   }
@@ -316,51 +316,56 @@
   }
 
   .line-badge {
-    width: 44px; height: 44px;
-    border-radius: 12px;
+    min-width: 52px;
+    height: 52px;
+    border-radius: 14px;
     display: flex; align-items: center; justify-content: center;
-    font-family: var(--mono);
-    font-size: 13px;
+    font-family: var(--sans);
+    font-size: 16px;
     font-weight: 700;
     flex-shrink: 0;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.01em;
+    padding: 0 6px;
   }
 
   .departure-info { flex: 1; min-width: 0; }
 
   .departure-dest {
-    font-size: 15px;
-    font-weight: 700;
+    font-size: 17px;
+    font-weight: 600;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     margin-bottom: 3px;
+    letter-spacing: -0.01em;
   }
 
   .departure-sub {
-    font-family: var(--mono);
-    font-size: 10px;
+    font-family: var(--sans);
+    font-size: 12px;
     color: var(--muted);
-    letter-spacing: 0.04em;
+    font-weight: 500;
   }
 
   .departure-time {
     text-align: right;
     flex-shrink: 0;
+    min-width: 64px;
   }
 
   .time-countdown {
-    font-family: var(--mono);
-    font-size: 22px;
+    font-family: var(--sans);
+    font-size: 36px;
     font-weight: 700;
     line-height: 1;
     margin-bottom: 2px;
+    letter-spacing: -0.03em;
   }
 
   .time-now { color: var(--green); }
   .time-soon { color: var(--yellow); }
   .time-later { color: var(--text); }
-  .time-label { font-size: 9px; color: var(--muted); font-family: var(--mono); letter-spacing: 0.08em; text-transform: uppercase; }
+  .time-label { font-size: 11px; color: var(--muted); font-family: var(--sans); font-weight: 500; }
 
   /* Deviation badge */
   .deviation-badge {
