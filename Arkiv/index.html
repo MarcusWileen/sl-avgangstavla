@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Avgångar">
+<meta name="theme-color" content="#0a0f1e">
+<title>SL Avgångar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0f1e;
+    --surface: #111827;
+    --surface2: #1a2235;
+    --border: #1e2d47;
+    --accent: #3b82f6;
+    --accent2: #06b6d4;
+    --green: #22c55e;
+    --yellow: #f59e0b;
+    --red: #ef4444;
+    --text: #f0f4ff;
+    --muted: #64748b;
+    --sans: 'DM Sans', sans-serif;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100dvh;
+    overscroll-behavior: none;
+  }
+
+  body {
+    padding-top: var(--safe-top);
+    padding-bottom: calc(var(--safe-bottom) + 24px);
+  }
+
+  /* Header */
+  .header {
+    padding: 18px 20px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: var(--safe-top);
+    z-index: 100;
+    background: linear-gradient(to bottom, var(--bg) 80%, transparent);
+  }
+
+  .logo {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: var(--accent);
+    text-transform: uppercase;
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .clock {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .refresh-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    width: 34px; height: 34px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 18px;
+    transition: color 0.15s, border-color 0.15s;
+    user-select: none;
+  }
+  .refresh-btn:active { color: var(--accent2); border-color: var(--accent2); }
+  .refresh-btn.spinning { animation: spin 1s linear infinite; }
+  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+  /* Main */
+  .main { padding: 0 14px; }
+
+  /* Station block */
+  .station-block { margin-bottom: 20px; }
+
+  .station-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    padding: 0 4px;
+  }
+
+  .station-name {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    flex: 1;
+  }
+
+  .station-dir {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--muted);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 4px 10px;
+    white-space: nowrap;
+  }
+
+  .live-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--green);
+    flex-shrink: 0;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.25; } }
+
+  /* Departure card */
+  .departure-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 16px 18px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    animation: fadeUp 0.2s ease both;
+  }
+  @keyframes fadeUp {
+    from { opacity:0; transform: translateY(6px); }
+    to   { opacity:1; transform: translateY(0); }
+  }
+
+  .line-badge {
+    min-width: 54px; height: 54px;
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 17px;
+    font-weight: 700;
+    flex-shrink: 0;
+    padding: 0 6px;
+    letter-spacing: -0.01em;
+  }
+
+  .dep-info { flex: 1; min-width: 0; }
+
+  .dep-dest {
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 3px;
+  }
+
+  .dep-sub {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--muted);
+  }
+
+  .dep-cancelled {
+    display: inline-block;
+    margin-top: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--red);
+    background: rgba(239,68,68,0.12);
+    border-radius: 6px;
+    padding: 2px 8px;
+  }
+
+  .dep-time {
+    text-align: right;
+    flex-shrink: 0;
+    min-width: 64px;
+  }
+
+  .dep-mins {
+    font-size: 38px;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.04em;
+    font-variant-numeric: tabular-nums;
+    margin-bottom: 1px;
+  }
+
+  .dep-unit {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--muted);
+  }
+
+  .c-green  { color: var(--green); }
+  .c-yellow { color: var(--yellow); }
+  .c-text   { color: var(--text); }
+
+  /* Divider */
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 4px 0 20px;
+  }
+
+  /* Skeleton */
+  .skeleton {
+    background: linear-gradient(90deg, var(--surface) 25%, var(--surface2) 50%, var(--surface) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s infinite;
+    border-radius: 18px;
+    height: 86px;
+    margin-bottom: 8px;
+  }
+  @keyframes shimmer { 0% { background-position:200% 0; } 100% { background-position:-200% 0; } }
+
+  .error-msg {
+    text-align: center;
+    padding: 24px 20px;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  .updated-line {
+    text-align: center;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--muted);
+    padding: 12px 0 4px;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">Mina avgångar</div>
+  <div class="header-right">
+    <div class="clock" id="clock">--:--</div>
+    <div class="refresh-btn" id="refreshBtn">↻</div>
+  </div>
+</div>
+
+<div class="main" id="main"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════════
+// KONFIGURATION – ändra här om du vill lägga till/byta hållplats
+// ═══════════════════════════════════════════════════════════════════════════════
+const STATIONS = [
+  {
+    searchName:      'Näsbypark',
+    displayName:     'Näsbypark',
+    directionFilter: 'stockholms östra',   // filtrerar på destination (lowercase)
+    dirLabel:        '→ Stockholms östra',
+  },
+  {
+    searchName:      'Koltrastvägen',
+    displayName:     'Koltrastvägen',
+    directionFilter: 'täby centrum',
+    dirLabel:        '→ Täby centrum',
+  },
+];
+
+// ═══════════════════════════════════════════════════════════════════════════════
+const BASE = 'https://transport.integration.sl.se/v1';
+let resolvedStations = [];
+let departureData    = {};
+let refreshTimer     = null;
+
+// Klocka
+function updateClock() {
+  document.getElementById('clock').textContent =
+    new Date().toLocaleTimeString('sv-SE', { hour:'2-digit', minute:'2-digit' });
+}
+updateClock();
+setInterval(updateClock, 1000);
+
+// Färger per trafikslag
+const MODE_STYLE = {
+  BUS:   { bg:'rgba(59,130,246,0.18)',  color:'#93c5fd' },
+  METRO: { bg:'rgba(239,68,68,0.18)',   color:'#fca5a5' },
+  TRAM:  { bg:'rgba(34,197,94,0.18)',   color:'#86efac' },
+  TRAIN: { bg:'rgba(245,158,11,0.18)',  color:'#fcd34d' },
+  SHIP:  { bg:'rgba(6,182,212,0.18)',   color:'#67e8f9' },
+};
+const modeStyle = m => MODE_STYLE[m] || { bg:'rgba(100,116,139,0.2)', color:'#94a3b8' };
+
+// Hämta alla sites och hitta rätt ID
+async function resolveSiteId(name) {
+  const res = await fetch(`${BASE}/sites?expand=false`);
+  const all = await res.json();
+  const q   = name.toLowerCase().trim();
+  return (all.find(s => s.name?.toLowerCase() === q)
+       || all.find(s => s.name?.toLowerCase().includes(q)))?.id
+       ?? null;
+}
+
+async function fetchDepartures(siteId) {
+  const res = await fetch(`${BASE}/sites/${siteId}/departures`);
+  if (!res.ok) return [];
+  const data = await res.json();
+  return data.departures || [];
+}
+
+function getMinutes(dep) {
+  const t = dep.expected || dep.scheduled;
+  return t ? Math.round((new Date(t) - Date.now()) / 60000) : 9999;
+}
+
+function clockStr(dep) {
+  const t = dep.expected || dep.scheduled;
+  return t ? new Date(t).toLocaleTimeString('sv-SE', { hour:'2-digit', minute:'2-digit' }) : '--:--';
+}
+
+// ─── Render ───────────────────────────────────────────────────────────────────
+function render() {
+  const main = document.getElementById('main');
+  let html = '';
+
+  if (!resolvedStations.length) {
+    html = STATIONS.map(() => `
+      <div class="station-block">
+        <div class="skeleton"></div>
+        <div class="skeleton" style="animation-delay:.1s"></div>
+      </div>`).join('<div class="divider"></div>');
+    main.innerHTML = html;
+    return;
+  }
+
+  resolvedStations.forEach((st, idx) => {
+    const rawDeps = departureData[st.siteId];
+
+    html += `<div class="station-block">
+      <div class="station-label">
+        <div class="live-dot"></div>
+        <div class="station-name">${st.displayName}</div>
+        <div class="station-dir">${st.dirLabel}</div>
+      </div>`;
+
+    if (rawDeps === null) {
+      html += `<div class="skeleton"></div><div class="skeleton" style="animation-delay:.1s"></div>`;
+    } else {
+      // Filtrera på riktning och ta bort redan avgångna
+      const deps = rawDeps
+        .filter(d => {
+          const dest = (d.destination || d.direction || '').toLowerCase();
+          return dest.includes(st.directionFilter);
+        })
+        .filter(d => getMinutes(d) >= -1)
+        .slice(0, 5);
+
+      if (!deps.length) {
+        html += `<div class="error-msg">Inga avgångar mot ${st.dirLabel.replace('→ ','')}</div>`;
+      } else {
+        deps.forEach((dep, i) => {
+          const mins      = getMinutes(dep);
+          const mode      = dep.line?.transport_mode || 'BUS';
+          const s         = modeStyle(mode);
+          const line      = dep.line?.designation || '?';
+          const dest      = dep.destination || dep.direction || '–';
+          const cancelled = dep.state === 'CANCELLED';
+
+          let minsHtml = '', unitHtml = '';
+          if (cancelled) {
+            minsHtml = `<span style="font-size:14px;color:var(--red);font-weight:700">INST.</span>`;
+          } else if (mins <= 0) {
+            minsHtml = `<span class="c-green">Nu</span>`;
+          } else if (mins > 59) {
+            minsHtml = `<span class="c-text" style="font-size:22px;letter-spacing:-0.01em">${clockStr(dep)}</span>`;
+          } else {
+            const cls = mins <= 2 ? 'c-green' : mins <= 5 ? 'c-yellow' : 'c-text';
+            minsHtml  = `<span class="${cls}">${mins}</span>`;
+            unitHtml  = 'min';
+          }
+
+          html += `
+            <div class="departure-card" style="animation-delay:${i*0.05}s">
+              <div class="line-badge" style="background:${s.bg};color:${s.color}">${line}</div>
+              <div class="dep-info">
+                <div class="dep-dest">${dest}</div>
+                <div class="dep-sub">${mode}</div>
+                ${cancelled ? '<span class="dep-cancelled">INSTÄLLD</span>' : ''}
+              </div>
+              <div class="dep-time">
+                <div class="dep-mins">${minsHtml}</div>
+                <div class="dep-unit">${unitHtml}</div>
+              </div>
+            </div>`;
+        });
+      }
+    }
+
+    html += `</div>`;
+    if (idx < resolvedStations.length - 1) html += `<div class="divider"></div>`;
+  });
+
+  const now = new Date().toLocaleTimeString('sv-SE', { hour:'2-digit', minute:'2-digit' });
+  html += `<div class="updated-line">Uppdaterad ${now} · auto-refresh var 20s</div>`;
+  main.innerHTML = html;
+}
+
+// ─── Hämta avgångar ───────────────────────────────────────────────────────────
+async function loadDepartures() {
+  clearTimeout(refreshTimer);
+  await Promise.all(resolvedStations.map(async st => {
+    try { departureData[st.siteId] = await fetchDepartures(st.siteId); }
+    catch { departureData[st.siteId] = []; }
+  }));
+  render();
+  refreshTimer = setTimeout(loadDepartures, 20000);
+}
+
+// ─── Start ────────────────────────────────────────────────────────────────────
+async function init() {
+  render(); // skeleton
+  try {
+    const resolved = await Promise.all(
+      STATIONS.map(async cfg => {
+        const siteId = await resolveSiteId(cfg.searchName);
+        if (!siteId) throw new Error(`Hittade inte: ${cfg.searchName}`);
+        return { ...cfg, siteId };
+      })
+    );
+    resolvedStations = resolved;
+    resolved.forEach(s => { departureData[s.siteId] = null; });
+    render();
+    await loadDepartures();
+  } catch (e) {
+    document.getElementById('main').innerHTML =
+      `<div class="error-msg">⚠ ${e.message}</div>`;
+  }
+}
+
+document.getElementById('refreshBtn').addEventListener('click', async () => {
+  const btn = document.getElementById('refreshBtn');
+  btn.classList.add('spinning');
+  await loadDepartures();
+  btn.classList.remove('spinning');
+});
+
+init();
+</script>
+</body>
+</html>

@@ -9,7 +9,7 @@
 <meta name="theme-color" content="#0a0f1e">
 <title>SL Avgångar</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg: #0a0f1e;
@@ -43,7 +43,7 @@
     padding-bottom: calc(var(--safe-bottom) + 24px);
   }
 
-  /* Header */
+  /* ── Header ── */
   .header {
     padding: 18px 20px 16px;
     display: flex;
@@ -63,11 +63,7 @@
     text-transform: uppercase;
   }
 
-  .header-right {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
+  .header-right { display: flex; align-items: center; gap: 12px; }
 
   .clock {
     font-size: 14px;
@@ -89,13 +85,13 @@
     user-select: none;
   }
   .refresh-btn:active { color: var(--accent2); border-color: var(--accent2); }
-  .refresh-btn.spinning { animation: spin 1s linear infinite; }
-  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  .refresh-btn.spinning { animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
 
-  /* Main */
+  /* ── Main ── */
   .main { padding: 0 14px; }
 
-  /* Station block */
+  /* ── Station block ── */
   .station-block { margin-bottom: 20px; }
 
   .station-label {
@@ -133,21 +129,31 @@
   }
   @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.25; } }
 
-  /* Departure card */
+  /* ── Departure card ── */
   .departure-card {
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 18px;
-    padding: 16px 18px;
     margin-bottom: 8px;
-    display: flex;
-    align-items: center;
-    gap: 16px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: border-color 0.2s;
     animation: fadeUp 0.2s ease both;
   }
+  .departure-card:active { border-color: var(--accent); }
+  .departure-card.expanded { border-color: rgba(59,130,246,0.4); }
+
   @keyframes fadeUp {
     from { opacity:0; transform: translateY(6px); }
     to   { opacity:1; transform: translateY(0); }
+  }
+
+  /* Summary row – always visible */
+  .card-summary {
+    padding: 16px 18px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
   }
 
   .line-badge {
@@ -190,11 +196,7 @@
     padding: 2px 8px;
   }
 
-  .dep-time {
-    text-align: right;
-    flex-shrink: 0;
-    min-width: 64px;
-  }
+  .dep-time { text-align: right; flex-shrink: 0; min-width: 64px; }
 
   .dep-mins {
     font-size: 38px;
@@ -205,24 +207,143 @@
     margin-bottom: 1px;
   }
 
-  .dep-unit {
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--muted);
-  }
+  .dep-unit { font-size: 12px; font-weight: 500; color: var(--muted); }
 
   .c-green  { color: var(--green); }
   .c-yellow { color: var(--yellow); }
   .c-text   { color: var(--text); }
 
-  /* Divider */
+  /* Chevron */
+  .chevron {
+    font-size: 14px;
+    color: var(--muted);
+    flex-shrink: 0;
+    transition: transform 0.25s;
+    margin-left: -8px;
+  }
+  .departure-card.expanded .chevron { transform: rotate(180deg); }
+
+  /* ── Expanded panel ── */
+  .card-detail {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.35s ease;
+  }
+  .departure-card.expanded .card-detail { max-height: 300px; }
+
+  .detail-inner {
+    border-top: 1px solid var(--border);
+    padding: 16px 18px 18px;
+  }
+
+  /* Timeline */
+  .timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin-bottom: 14px;
+  }
+
+  .tl-row {
+    display: flex;
+    align-items: stretch;
+    gap: 14px;
+  }
+
+  .tl-left {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 18px;
+    flex-shrink: 0;
+  }
+
+  .tl-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    border: 2px solid var(--accent);
+    background: var(--bg);
+    flex-shrink: 0;
+    margin-top: 4px;
+  }
+
+  .tl-dot.end { border-color: var(--accent2); }
+
+  .tl-line {
+    flex: 1;
+    width: 2px;
+    background: var(--border);
+    margin: 2px 0;
+  }
+
+  .tl-content {
+    padding-bottom: 16px;
+    flex: 1;
+  }
+
+  .tl-row:last-child .tl-content { padding-bottom: 0; }
+
+  .tl-time {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    margin-bottom: 2px;
+  }
+
+  .tl-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--muted);
+  }
+
+  /* Duration pill */
+  .duration-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(59,130,246,0.1);
+    border: 1px solid rgba(59,130,246,0.2);
+    border-radius: 20px;
+    padding: 5px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent);
+  }
+
+  /* Detail loading / error */
+  .detail-loading {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--muted);
+    font-size: 13px;
+    padding: 4px 0 6px;
+  }
+
+  .spinner {
+    width: 16px; height: 16px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    flex-shrink: 0;
+  }
+
+  .detail-error {
+    color: var(--muted);
+    font-size: 13px;
+    padding: 4px 0 6px;
+  }
+
+  /* ── Misc ── */
   .divider {
     height: 1px;
     background: var(--border);
     margin: 4px 0 20px;
   }
 
-  /* Skeleton */
   .skeleton {
     background: linear-gradient(90deg, var(--surface) 25%, var(--surface2) 50%, var(--surface) 75%);
     background-size: 200% 100%;
@@ -263,31 +384,37 @@
 <div class="main" id="main"></div>
 
 <script>
-// ═══════════════════════════════════════════════════════════════════════════════
-// KONFIGURATION – ändra här om du vill lägga till/byta hållplats
-// ═══════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+// KONFIGURATION
+// ═══════════════════════════════════════════════════════════════════
 const STATIONS = [
   {
     searchName:      'Näsbypark',
     displayName:     'Näsbypark',
-    directionFilter: 'stockholms östra',   // filtrerar på destination (lowercase)
+    directionFilter: 'stockholms östra',
     dirLabel:        '→ Stockholms östra',
+    destination:     'Stockholms östra',   // används för Journey Planner
   },
   {
     searchName:      'Koltrastvägen',
     displayName:     'Koltrastvägen',
     directionFilter: 'täby centrum',
     dirLabel:        '→ Täby centrum',
+    destination:     'Täby centrum',
   },
 ];
 
-// ═══════════════════════════════════════════════════════════════════════════════
-const BASE = 'https://transport.integration.sl.se/v1';
-let resolvedStations = [];
-let departureData    = {};
-let refreshTimer     = null;
+// ═══════════════════════════════════════════════════════════════════
+const BASE_TRANSPORT  = 'https://transport.integration.sl.se/v1';
+const BASE_JOURNEY    = 'https://journeyplanner.integration.sl.se/v2';
 
-// Klocka
+let resolvedStations  = [];
+let departureData     = {};
+let refreshTimer      = null;
+let expandedCardKey   = null;   // "stationIdx-depIdx"
+let detailCache       = {};     // key → trip detail object
+
+// ── Klocka ──────────────────────────────────────────────────────────
 function updateClock() {
   document.getElementById('clock').textContent =
     new Date().toLocaleTimeString('sv-SE', { hour:'2-digit', minute:'2-digit' });
@@ -295,7 +422,7 @@ function updateClock() {
 updateClock();
 setInterval(updateClock, 1000);
 
-// Färger per trafikslag
+// ── Färger ──────────────────────────────────────────────────────────
 const MODE_STYLE = {
   BUS:   { bg:'rgba(59,130,246,0.18)',  color:'#93c5fd' },
   METRO: { bg:'rgba(239,68,68,0.18)',   color:'#fca5a5' },
@@ -305,34 +432,154 @@ const MODE_STYLE = {
 };
 const modeStyle = m => MODE_STYLE[m] || { bg:'rgba(100,116,139,0.2)', color:'#94a3b8' };
 
-// Hämta alla sites och hitta rätt ID
-async function resolveSiteId(name) {
-  const res = await fetch(`${BASE}/sites?expand=false`);
-  const all = await res.json();
-  const q   = name.toLowerCase().trim();
-  return (all.find(s => s.name?.toLowerCase() === q)
-       || all.find(s => s.name?.toLowerCase().includes(q)))?.id
-       ?? null;
-}
-
-async function fetchDepartures(siteId) {
-  const res = await fetch(`${BASE}/sites/${siteId}/departures`);
-  if (!res.ok) return [];
-  const data = await res.json();
-  return data.departures || [];
-}
-
+// ── Hjälpfunktioner ─────────────────────────────────────────────────
 function getMinutes(dep) {
   const t = dep.expected || dep.scheduled;
   return t ? Math.round((new Date(t) - Date.now()) / 60000) : 9999;
 }
 
-function clockStr(dep) {
-  const t = dep.expected || dep.scheduled;
-  return t ? new Date(t).toLocaleTimeString('sv-SE', { hour:'2-digit', minute:'2-digit' }) : '--:--';
+function toHHMM(isoOrDate) {
+  if (!isoOrDate) return '--:--';
+  return new Date(isoOrDate).toLocaleTimeString('sv-SE', { hour:'2-digit', minute:'2-digit' });
 }
 
-// ─── Render ───────────────────────────────────────────────────────────────────
+function minutesBetween(a, b) {
+  if (!a || !b) return null;
+  return Math.round((new Date(b) - new Date(a)) / 60000);
+}
+
+// ── API: hämta alla sites ────────────────────────────────────────────
+async function resolveSiteId(name) {
+  const res = await fetch(`${BASE_TRANSPORT}/sites?expand=false`);
+  const all = await res.json();
+  const q   = name.toLowerCase().trim();
+  return (all.find(s => s.name?.toLowerCase() === q)
+       || all.find(s => s.name?.toLowerCase().includes(q)))?.id ?? null;
+}
+
+// ── API: avgångar ───────────────────────────────────────────────────
+async function fetchDepartures(siteId) {
+  const res = await fetch(`${BASE_TRANSPORT}/sites/${siteId}/departures`);
+  if (!res.ok) return [];
+  return (await res.json()).departures || [];
+}
+
+// ── API: Journey Planner – hämta resedetaljer ───────────────────────
+async function fetchTripDetail(originName, destName, depTime) {
+  // Steg 1: slå upp stop-ID för origin och destination
+  const [origRes, destRes] = await Promise.all([
+    fetch(`${BASE_JOURNEY}/stop-finder?name_sf=${encodeURIComponent(originName)}&type_sf=any&any_obj_filter_sf=2`),
+    fetch(`${BASE_JOURNEY}/stop-finder?name_sf=${encodeURIComponent(destName)}&type_sf=any&any_obj_filter_sf=2`),
+  ]);
+  const origData = await origRes.json();
+  const destData = await destRes.json();
+
+  const origStop = origData?.locations?.[0];
+  const destStop = destData?.locations?.[0];
+
+  if (!origStop || !destStop) throw new Error('Hittade inte hållplatser');
+
+  const origId = origStop.id;
+  const destId = destStop.id;
+
+  // Steg 2: sök resa med avgångstid
+  const dt = new Date(depTime);
+  const dateStr = dt.toISOString().slice(0,10).replace(/-/g,'');
+  const timeStr = dt.toLocaleTimeString('sv-SE', { hour:'2-digit', minute:'2-digit' }).replace(':','');
+
+  const tripUrl = `${BASE_JOURNEY}/trips?` +
+    `type_origin=any&name_origin=${encodeURIComponent(origId)}&` +
+    `type_destination=any&name_destination=${encodeURIComponent(destId)}&` +
+    `itd_date=${dateStr}&itd_time=${timeStr}&` +
+    `calc_number_of_trips=1`;
+
+  const tripRes  = await fetch(tripUrl);
+  const tripData = await tripRes.json();
+
+  const trip = tripData?.journeys?.[0];
+  if (!trip) throw new Error('Ingen resa hittades');
+
+  const legs      = trip.legs || [];
+  const firstLeg  = legs[0];
+  const lastLeg   = legs[legs.length - 1];
+
+  const depISO = firstLeg?.origin?.departureTimeEstimated
+              || firstLeg?.origin?.departureTimePlanned;
+  const arrISO = lastLeg?.destination?.arrivalTimeEstimated
+              || lastLeg?.destination?.arrivalTimePlanned;
+
+  const destStopName = lastLeg?.destination?.disassembledName
+                    || lastLeg?.destination?.name
+                    || destName;
+
+  return { depISO, arrISO, destStopName };
+}
+
+// ── Render ──────────────────────────────────────────────────────────
+function minsHtmlUnit(dep) {
+  const mins = getMinutes(dep);
+  const cancelled = dep.state === 'CANCELLED';
+  let minsHtml = '', unitHtml = '';
+
+  if (cancelled) {
+    minsHtml = `<span style="font-size:14px;color:var(--red);font-weight:700">INST.</span>`;
+  } else if (mins <= 0) {
+    minsHtml = `<span class="c-green">Nu</span>`;
+  } else if (mins > 59) {
+    minsHtml = `<span class="c-text" style="font-size:22px;letter-spacing:-0.01em">${toHHMM(dep.expected||dep.scheduled)}</span>`;
+  } else {
+    const cls = mins <= 2 ? 'c-green' : mins <= 5 ? 'c-yellow' : 'c-text';
+    minsHtml  = `<span class="${cls}">${mins}</span>`;
+    unitHtml  = 'min';
+  }
+  return { minsHtml, unitHtml };
+}
+
+function renderDetailInner(key) {
+  const el = document.querySelector(`[data-key="${key}"] .detail-inner`);
+  if (!el) return;
+
+  const detail = detailCache[key];
+
+  if (!detail) {
+    el.innerHTML = `<div class="detail-loading"><div class="spinner"></div> Hämtar reseinfo…</div>`;
+    return;
+  }
+
+  if (detail.error) {
+    el.innerHTML = `<div class="detail-error">⚠ ${detail.error}</div>`;
+    return;
+  }
+
+  const dur = minutesBetween(detail.depISO, detail.arrISO);
+  const durStr = dur ? `${dur} min` : '–';
+
+  el.innerHTML = `
+    <div class="timeline">
+      <div class="tl-row">
+        <div class="tl-left">
+          <div class="tl-dot"></div>
+          <div class="tl-line"></div>
+        </div>
+        <div class="tl-content">
+          <div class="tl-time">${toHHMM(detail.depISO)}</div>
+          <div class="tl-label">Avgång</div>
+        </div>
+      </div>
+      <div class="tl-row">
+        <div class="tl-left">
+          <div class="tl-dot end"></div>
+        </div>
+        <div class="tl-content">
+          <div class="tl-time">${toHHMM(detail.arrISO)}</div>
+          <div class="tl-label">Ankomst · ${detail.destStopName}</div>
+        </div>
+      </div>
+    </div>
+    <div class="duration-pill">⏱ Restid ${durStr}</div>
+  `;
+}
+
 function render() {
   const main = document.getElementById('main');
   let html = '';
@@ -347,7 +594,7 @@ function render() {
     return;
   }
 
-  resolvedStations.forEach((st, idx) => {
+  resolvedStations.forEach((st, si) => {
     const rawDeps = departureData[st.siteId];
 
     html += `<div class="station-block">
@@ -360,50 +607,42 @@ function render() {
     if (rawDeps === null) {
       html += `<div class="skeleton"></div><div class="skeleton" style="animation-delay:.1s"></div>`;
     } else {
-      // Filtrera på riktning och ta bort redan avgångna
       const deps = rawDeps
-        .filter(d => {
-          const dest = (d.destination || d.direction || '').toLowerCase();
-          return dest.includes(st.directionFilter);
-        })
+        .filter(d => (d.destination||d.direction||'').toLowerCase().includes(st.directionFilter))
         .filter(d => getMinutes(d) >= -1)
         .slice(0, 5);
 
       if (!deps.length) {
         html += `<div class="error-msg">Inga avgångar mot ${st.dirLabel.replace('→ ','')}</div>`;
       } else {
-        deps.forEach((dep, i) => {
-          const mins      = getMinutes(dep);
+        deps.forEach((dep, di) => {
+          const key       = `${si}-${di}`;
           const mode      = dep.line?.transport_mode || 'BUS';
           const s         = modeStyle(mode);
           const line      = dep.line?.designation || '?';
           const dest      = dep.destination || dep.direction || '–';
           const cancelled = dep.state === 'CANCELLED';
-
-          let minsHtml = '', unitHtml = '';
-          if (cancelled) {
-            minsHtml = `<span style="font-size:14px;color:var(--red);font-weight:700">INST.</span>`;
-          } else if (mins <= 0) {
-            minsHtml = `<span class="c-green">Nu</span>`;
-          } else if (mins > 59) {
-            minsHtml = `<span class="c-text" style="font-size:22px;letter-spacing:-0.01em">${clockStr(dep)}</span>`;
-          } else {
-            const cls = mins <= 2 ? 'c-green' : mins <= 5 ? 'c-yellow' : 'c-text';
-            minsHtml  = `<span class="${cls}">${mins}</span>`;
-            unitHtml  = 'min';
-          }
+          const expanded  = expandedCardKey === key;
+          const { minsHtml, unitHtml } = minsHtmlUnit(dep);
 
           html += `
-            <div class="departure-card" style="animation-delay:${i*0.05}s">
-              <div class="line-badge" style="background:${s.bg};color:${s.color}">${line}</div>
-              <div class="dep-info">
-                <div class="dep-dest">${dest}</div>
-                <div class="dep-sub">${mode}</div>
-                ${cancelled ? '<span class="dep-cancelled">INSTÄLLD</span>' : ''}
+            <div class="departure-card ${expanded ? 'expanded' : ''}" data-key="${key}"
+                 data-si="${si}" data-di="${di}" style="animation-delay:${di*0.05}s">
+              <div class="card-summary">
+                <div class="line-badge" style="background:${s.bg};color:${s.color}">${line}</div>
+                <div class="dep-info">
+                  <div class="dep-dest">${dest}</div>
+                  <div class="dep-sub">${mode}</div>
+                  ${cancelled ? '<span class="dep-cancelled">INSTÄLLD</span>' : ''}
+                </div>
+                <div class="dep-time">
+                  <div class="dep-mins">${minsHtml}</div>
+                  <div class="dep-unit">${unitHtml}</div>
+                </div>
+                <div class="chevron">▼</div>
               </div>
-              <div class="dep-time">
-                <div class="dep-mins">${minsHtml}</div>
-                <div class="dep-unit">${unitHtml}</div>
+              <div class="card-detail">
+                <div class="detail-inner"></div>
               </div>
             </div>`;
         });
@@ -411,28 +650,92 @@ function render() {
     }
 
     html += `</div>`;
-    if (idx < resolvedStations.length - 1) html += `<div class="divider"></div>`;
+    if (si < resolvedStations.length - 1) html += `<div class="divider"></div>`;
   });
 
   const now = new Date().toLocaleTimeString('sv-SE', { hour:'2-digit', minute:'2-digit' });
   html += `<div class="updated-line">Uppdaterad ${now} · auto-refresh var 20s</div>`;
   main.innerHTML = html;
+
+  // Fyll i redan cachad detalj för expanderat kort
+  if (expandedCardKey) renderDetailInner(expandedCardKey);
+
+  // Klick-hantering för expandering
+  document.querySelectorAll('.departure-card').forEach(card => {
+    card.addEventListener('click', () => handleCardClick(card));
+  });
 }
 
-// ─── Hämta avgångar ───────────────────────────────────────────────────────────
+// ── Kortklick ────────────────────────────────────────────────────────
+async function handleCardClick(card) {
+  const key = card.dataset.key;
+  const si  = parseInt(card.dataset.si);
+  const di  = parseInt(card.dataset.di);
+
+  if (expandedCardKey === key) {
+    // Stäng
+    expandedCardKey = null;
+    card.classList.remove('expanded');
+    return;
+  }
+
+  // Stäng eventuellt öppet kort
+  if (expandedCardKey) {
+    const prev = document.querySelector(`[data-key="${expandedCardKey}"]`);
+    if (prev) prev.classList.remove('expanded');
+  }
+
+  expandedCardKey = key;
+  card.classList.add('expanded');
+
+  // Visa laddning direkt
+  renderDetailInner(key);
+
+  // Hämta detaljer om de inte finns i cache
+  if (!detailCache[key]) {
+    const st  = resolvedStations[si];
+    const dep = departureData[st.siteId]
+      ?.filter(d => (d.destination||d.direction||'').toLowerCase().includes(st.directionFilter))
+      ?.filter(d => getMinutes(d) >= -1)?.[di];
+
+    if (!dep) {
+      detailCache[key] = { error: 'Avgångsinformation saknas' };
+      renderDetailInner(key);
+      return;
+    }
+
+    const depTime = dep.expected || dep.scheduled;
+
+    try {
+      const detail = await fetchTripDetail(st.displayName, st.destination, depTime);
+      detailCache[key] = detail;
+    } catch (e) {
+      detailCache[key] = { error: 'Kunde inte hämta reseinfo' };
+    }
+
+    renderDetailInner(key);
+  }
+}
+
+// ── Hämta avgångar ───────────────────────────────────────────────────
 async function loadDepartures() {
   clearTimeout(refreshTimer);
+  // Rensa detaljcache vid uppdatering
+  detailCache = {};
+  expandedCardKey = null;
+
   await Promise.all(resolvedStations.map(async st => {
     try { departureData[st.siteId] = await fetchDepartures(st.siteId); }
     catch { departureData[st.siteId] = []; }
   }));
+
   render();
   refreshTimer = setTimeout(loadDepartures, 20000);
 }
 
-// ─── Start ────────────────────────────────────────────────────────────────────
+// ── Start ────────────────────────────────────────────────────────────
 async function init() {
-  render(); // skeleton
+  render();
   try {
     const resolved = await Promise.all(
       STATIONS.map(async cfg => {
