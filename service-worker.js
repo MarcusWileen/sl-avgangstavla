@@ -2,7 +2,7 @@
 // service-worker.js
 // Uppdatera CACHE_VERSION vid varje ny deploy så gamla cacher rensas
 // ─────────────────────────────────────────────────────────────────
-const CACHE_VERSION = 'v1.4';
+const CACHE_VERSION = 'v1.5';
 const CACHE_NAME    = `sl-avgangstavla-${CACHE_VERSION}`;
 
 // Filer som cachas vid installation (app-skalet)
