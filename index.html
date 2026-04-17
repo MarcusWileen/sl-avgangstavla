@@ -7,6 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Avgångar">
 <meta name="theme-color" content="#0a0f1e">
+<link rel="manifest" href="manifest.json">
 <title>SL Avgångar</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -88,6 +89,22 @@
   .refresh-btn.spinning { animation: spin 0.8s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
+  /* ── Update banner ── */
+  .update-banner {
+    display: none;
+    background: rgba(59,130,246,0.12);
+    border: 1px solid rgba(59,130,246,0.3);
+    border-radius: 12px;
+    margin: 0 14px 12px;
+    padding: 12px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent);
+    cursor: pointer;
+    text-align: center;
+  }
+  .update-banner.visible { display: block; }
+
   /* ── Main ── */
   .main { padding: 0 14px; }
 
@@ -148,7 +165,6 @@
     to   { opacity:1; transform: translateY(0); }
   }
 
-  /* Summary row – always visible */
   .card-summary {
     padding: 16px 18px;
     display: flex;
@@ -179,11 +195,7 @@
     margin-bottom: 3px;
   }
 
-  .dep-sub {
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--muted);
-  }
+  .dep-sub { font-size: 12px; font-weight: 500; color: var(--muted); }
 
   .dep-cancelled {
     display: inline-block;
@@ -213,7 +225,6 @@
   .c-yellow { color: var(--yellow); }
   .c-text   { color: var(--text); }
 
-  /* Chevron */
   .chevron {
     font-size: 14px;
     color: var(--muted);
@@ -236,19 +247,9 @@
     padding: 16px 18px 18px;
   }
 
-  /* Timeline */
-  .timeline {
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-    margin-bottom: 14px;
-  }
+  .timeline { display: flex; flex-direction: column; gap: 0; margin-bottom: 14px; }
 
-  .tl-row {
-    display: flex;
-    align-items: stretch;
-    gap: 14px;
-  }
+  .tl-row { display: flex; align-items: stretch; gap: 14px; }
 
   .tl-left {
     display: flex;
@@ -266,21 +267,11 @@
     flex-shrink: 0;
     margin-top: 4px;
   }
-
   .tl-dot.end { border-color: var(--accent2); }
 
-  .tl-line {
-    flex: 1;
-    width: 2px;
-    background: var(--border);
-    margin: 2px 0;
-  }
+  .tl-line { flex: 1; width: 2px; background: var(--border); margin: 2px 0; }
 
-  .tl-content {
-    padding-bottom: 16px;
-    flex: 1;
-  }
-
+  .tl-content { padding-bottom: 16px; flex: 1; }
   .tl-row:last-child .tl-content { padding-bottom: 0; }
 
   .tl-time {
@@ -292,13 +283,8 @@
     margin-bottom: 2px;
   }
 
-  .tl-label {
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--muted);
-  }
+  .tl-label { font-size: 12px; font-weight: 500; color: var(--muted); }
 
-  /* Duration pill */
   .duration-pill {
     display: inline-flex;
     align-items: center;
@@ -312,7 +298,6 @@
     color: var(--accent);
   }
 
-  /* Detail loading / error */
   .detail-loading {
     display: flex;
     align-items: center;
@@ -331,18 +316,10 @@
     flex-shrink: 0;
   }
 
-  .detail-error {
-    color: var(--muted);
-    font-size: 13px;
-    padding: 4px 0 6px;
-  }
+  .detail-error { color: var(--muted); font-size: 13px; padding: 4px 0 6px; }
 
   /* ── Misc ── */
-  .divider {
-    height: 1px;
-    background: var(--border);
-    margin: 4px 0 20px;
-  }
+  .divider { height: 1px; background: var(--border); margin: 4px 0 20px; }
 
   .skeleton {
     background: linear-gradient(90deg, var(--surface) 25%, var(--surface2) 50%, var(--surface) 75%);
@@ -381,6 +358,11 @@
   </div>
 </div>
 
+<!-- Visas automatiskt när en ny version är tillgänglig -->
+<div class="update-banner" id="updateBanner">
+  🔄 Ny version tillgänglig – tryck för att uppdatera
+</div>
+
 <div class="main" id="main"></div>
 
 <script>
@@ -393,7 +375,7 @@ const STATIONS = [
     displayName:     'Näsbypark',
     directionFilter: 'stockholms östra',
     dirLabel:        '→ Stockholms östra',
-    destination:     'Stockholms östra',   // används för Journey Planner
+    destination:     'Stockholms östra',
   },
   {
     searchName:      'Koltrastvägen',
@@ -405,16 +387,47 @@ const STATIONS = [
 ];
 
 // ═══════════════════════════════════════════════════════════════════
-const BASE_TRANSPORT  = 'https://transport.integration.sl.se/v1';
-const BASE_JOURNEY    = 'https://journeyplanner.integration.sl.se/v2';
+const BASE_TRANSPORT = 'https://transport.integration.sl.se/v1';
+const BASE_JOURNEY   = 'https://journeyplanner.integration.sl.se/v2';
 
-let resolvedStations  = [];
-let departureData     = {};
-let refreshTimer      = null;
-let expandedCardKey   = null;   // "stationIdx-depIdx"
-let detailCache       = {};     // key → trip detail object
+let resolvedStations = [];
+let departureData    = {};
+let refreshTimer     = null;
+let expandedCardKey  = null;
+let detailCache      = {};
+let swRegistration   = null;
 
-// ── Klocka ──────────────────────────────────────────────────────────
+// ── Service Worker ───────────────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sl-avgangstavla/service-worker.js')
+    .then(reg => {
+      swRegistration = reg;
+
+      // Lyssna efter ny SW som väntar på att aktiveras
+      reg.addEventListener('updatefound', () => {
+        const newWorker = reg.installing;
+        newWorker.addEventListener('statechange', () => {
+          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            // Ny version finns – visa banner
+            const banner = document.getElementById('updateBanner');
+            banner.classList.add('visible');
+            banner.addEventListener('click', () => {
+              newWorker.postMessage({ type: 'SKIP_WAITING' });
+              window.location.reload();
+            });
+          }
+        });
+      });
+    })
+    .catch(err => console.warn('[SW] Registrering misslyckades:', err));
+
+  // Lyssna efter att SW tar över – ladda om sidan
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    window.location.reload();
+  });
+}
+
+// ── Klocka ───────────────────────────────────────────────────────────
 function updateClock() {
   document.getElementById('clock').textContent =
     new Date().toLocaleTimeString('sv-SE', { hour:'2-digit', minute:'2-digit' });
@@ -422,7 +435,7 @@ function updateClock() {
 updateClock();
 setInterval(updateClock, 1000);
 
-// ── Färger ──────────────────────────────────────────────────────────
+// ── Färger ───────────────────────────────────────────────────────────
 const MODE_STYLE = {
   BUS:   { bg:'rgba(59,130,246,0.18)',  color:'#93c5fd' },
   METRO: { bg:'rgba(239,68,68,0.18)',   color:'#fca5a5' },
@@ -432,15 +445,15 @@ const MODE_STYLE = {
 };
 const modeStyle = m => MODE_STYLE[m] || { bg:'rgba(100,116,139,0.2)', color:'#94a3b8' };
 
-// ── Hjälpfunktioner ─────────────────────────────────────────────────
+// ── Hjälpfunktioner ──────────────────────────────────────────────────
 function getMinutes(dep) {
   const t = dep.expected || dep.scheduled;
   return t ? Math.round((new Date(t) - Date.now()) / 60000) : 9999;
 }
 
-function toHHMM(isoOrDate) {
-  if (!isoOrDate) return '--:--';
-  return new Date(isoOrDate).toLocaleTimeString('sv-SE', { hour:'2-digit', minute:'2-digit' });
+function toHHMM(iso) {
+  if (!iso) return '--:--';
+  return new Date(iso).toLocaleTimeString('sv-SE', { hour:'2-digit', minute:'2-digit' });
 }
 
 function minutesBetween(a, b) {
@@ -448,7 +461,7 @@ function minutesBetween(a, b) {
   return Math.round((new Date(b) - new Date(a)) / 60000);
 }
 
-// ── API: hämta alla sites ────────────────────────────────────────────
+// ── API ──────────────────────────────────────────────────────────────
 async function resolveSiteId(name) {
   const res = await fetch(`${BASE_TRANSPORT}/sites?expand=false`);
   const all = await res.json();
@@ -457,16 +470,13 @@ async function resolveSiteId(name) {
        || all.find(s => s.name?.toLowerCase().includes(q)))?.id ?? null;
 }
 
-// ── API: avgångar ───────────────────────────────────────────────────
 async function fetchDepartures(siteId) {
   const res = await fetch(`${BASE_TRANSPORT}/sites/${siteId}/departures`);
   if (!res.ok) return [];
   return (await res.json()).departures || [];
 }
 
-// ── API: Journey Planner – hämta resedetaljer ───────────────────────
 async function fetchTripDetail(originName, destName, depTime) {
-  // Steg 1: slå upp stop-ID för origin och destination
   const [origRes, destRes] = await Promise.all([
     fetch(`${BASE_JOURNEY}/stop-finder?name_sf=${encodeURIComponent(originName)}&type_sf=any&any_obj_filter_sf=2`),
     fetch(`${BASE_JOURNEY}/stop-finder?name_sf=${encodeURIComponent(destName)}&type_sf=any&any_obj_filter_sf=2`),
@@ -476,48 +486,35 @@ async function fetchTripDetail(originName, destName, depTime) {
 
   const origStop = origData?.locations?.[0];
   const destStop = destData?.locations?.[0];
-
   if (!origStop || !destStop) throw new Error('Hittade inte hållplatser');
 
-  const origId = origStop.id;
-  const destId = destStop.id;
-
-  // Steg 2: sök resa med avgångstid
-  const dt = new Date(depTime);
+  const dt      = new Date(depTime);
   const dateStr = dt.toISOString().slice(0,10).replace(/-/g,'');
   const timeStr = dt.toLocaleTimeString('sv-SE', { hour:'2-digit', minute:'2-digit' }).replace(':','');
 
-  const tripUrl = `${BASE_JOURNEY}/trips?` +
-    `type_origin=any&name_origin=${encodeURIComponent(origId)}&` +
-    `type_destination=any&name_destination=${encodeURIComponent(destId)}&` +
-    `itd_date=${dateStr}&itd_time=${timeStr}&` +
-    `calc_number_of_trips=1`;
-
-  const tripRes  = await fetch(tripUrl);
+  const tripRes  = await fetch(
+    `${BASE_JOURNEY}/trips?type_origin=any&name_origin=${encodeURIComponent(origStop.id)}&` +
+    `type_destination=any&name_destination=${encodeURIComponent(destStop.id)}&` +
+    `itd_date=${dateStr}&itd_time=${timeStr}&calc_number_of_trips=1`
+  );
   const tripData = await tripRes.json();
-
-  const trip = tripData?.journeys?.[0];
+  const trip     = tripData?.journeys?.[0];
   if (!trip) throw new Error('Ingen resa hittades');
 
-  const legs      = trip.legs || [];
-  const firstLeg  = legs[0];
-  const lastLeg   = legs[legs.length - 1];
+  const legs     = trip.legs || [];
+  const first    = legs[0];
+  const last     = legs[legs.length - 1];
 
-  const depISO = firstLeg?.origin?.departureTimeEstimated
-              || firstLeg?.origin?.departureTimePlanned;
-  const arrISO = lastLeg?.destination?.arrivalTimeEstimated
-              || lastLeg?.destination?.arrivalTimePlanned;
-
-  const destStopName = lastLeg?.destination?.disassembledName
-                    || lastLeg?.destination?.name
-                    || destName;
-
-  return { depISO, arrISO, destStopName };
+  return {
+    depISO:       first?.origin?.departureTimeEstimated || first?.origin?.departureTimePlanned,
+    arrISO:       last?.destination?.arrivalTimeEstimated || last?.destination?.arrivalTimePlanned,
+    destStopName: last?.destination?.disassembledName || last?.destination?.name || destName,
+  };
 }
 
-// ── Render ──────────────────────────────────────────────────────────
+// ── Render helpers ───────────────────────────────────────────────────
 function minsHtmlUnit(dep) {
-  const mins = getMinutes(dep);
+  const mins      = getMinutes(dep);
   const cancelled = dep.state === 'CANCELLED';
   let minsHtml = '', unitHtml = '';
 
@@ -540,46 +537,39 @@ function renderDetailInner(key) {
   if (!el) return;
 
   const detail = detailCache[key];
-
   if (!detail) {
     el.innerHTML = `<div class="detail-loading"><div class="spinner"></div> Hämtar reseinfo…</div>`;
     return;
   }
-
   if (detail.error) {
     el.innerHTML = `<div class="detail-error">⚠ ${detail.error}</div>`;
     return;
   }
 
-  const dur = minutesBetween(detail.depISO, detail.arrISO);
+  const dur    = minutesBetween(detail.depISO, detail.arrISO);
   const durStr = dur ? `${dur} min` : '–';
 
   el.innerHTML = `
     <div class="timeline">
       <div class="tl-row">
-        <div class="tl-left">
-          <div class="tl-dot"></div>
-          <div class="tl-line"></div>
-        </div>
+        <div class="tl-left"><div class="tl-dot"></div><div class="tl-line"></div></div>
         <div class="tl-content">
           <div class="tl-time">${toHHMM(detail.depISO)}</div>
           <div class="tl-label">Avgång</div>
         </div>
       </div>
       <div class="tl-row">
-        <div class="tl-left">
-          <div class="tl-dot end"></div>
-        </div>
+        <div class="tl-left"><div class="tl-dot end"></div></div>
         <div class="tl-content">
           <div class="tl-time">${toHHMM(detail.arrISO)}</div>
           <div class="tl-label">Ankomst · ${detail.destStopName}</div>
         </div>
       </div>
     </div>
-    <div class="duration-pill">⏱ Restid ${durStr}</div>
-  `;
+    <div class="duration-pill">⏱ Restid ${durStr}</div>`;
 }
 
+// ── Render ───────────────────────────────────────────────────────────
 function render() {
   const main = document.getElementById('main');
   let html = '';
@@ -657,10 +647,8 @@ function render() {
   html += `<div class="updated-line">Uppdaterad ${now} · auto-refresh var 20s</div>`;
   main.innerHTML = html;
 
-  // Fyll i redan cachad detalj för expanderat kort
   if (expandedCardKey) renderDetailInner(expandedCardKey);
 
-  // Klick-hantering för expandering
   document.querySelectorAll('.departure-card').forEach(card => {
     card.addEventListener('click', () => handleCardClick(card));
   });
@@ -673,13 +661,11 @@ async function handleCardClick(card) {
   const di  = parseInt(card.dataset.di);
 
   if (expandedCardKey === key) {
-    // Stäng
     expandedCardKey = null;
     card.classList.remove('expanded');
     return;
   }
 
-  // Stäng eventuellt öppet kort
   if (expandedCardKey) {
     const prev = document.querySelector(`[data-key="${expandedCardKey}"]`);
     if (prev) prev.classList.remove('expanded');
@@ -687,11 +673,8 @@ async function handleCardClick(card) {
 
   expandedCardKey = key;
   card.classList.add('expanded');
-
-  // Visa laddning direkt
   renderDetailInner(key);
 
-  // Hämta detaljer om de inte finns i cache
   if (!detailCache[key]) {
     const st  = resolvedStations[si];
     const dep = departureData[st.siteId]
@@ -704,15 +687,11 @@ async function handleCardClick(card) {
       return;
     }
 
-    const depTime = dep.expected || dep.scheduled;
-
     try {
-      const detail = await fetchTripDetail(st.displayName, st.destination, depTime);
-      detailCache[key] = detail;
+      detailCache[key] = await fetchTripDetail(st.displayName, st.destination, dep.expected || dep.scheduled);
     } catch (e) {
       detailCache[key] = { error: 'Kunde inte hämta reseinfo' };
     }
-
     renderDetailInner(key);
   }
 }
@@ -720,8 +699,7 @@ async function handleCardClick(card) {
 // ── Hämta avgångar ───────────────────────────────────────────────────
 async function loadDepartures() {
   clearTimeout(refreshTimer);
-  // Rensa detaljcache vid uppdatering
-  detailCache = {};
+  detailCache     = {};
   expandedCardKey = null;
 
   await Promise.all(resolvedStations.map(async st => {
